@@ -9,6 +9,8 @@
 </p>
 
 Continual Bench provides an environment suitable for evaluating online reinforcement learning agents under the continual learning setup, with a unified world dynamics.
+Note: fixed the textures folder to include relevant textures in the script and then changed xml table structure from box to 2d so that textures file loads in properly.
+Now I will be testing some other CRL algorithms here.
 
 ## Installation
 
@@ -24,7 +26,7 @@ from continual_bench.envs import ContinualBenchEnv
 
 env = ContinualBenchEnv(render_mode="rgb_array", seed=0)
 action = ...
-next_obs, reward, terminated, truncated, info = env.step(action)
+next_obs, reward, done, info = env.step(action)
 ```
 
 ## License

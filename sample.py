@@ -3,12 +3,6 @@ import numpy as np
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from continual_bench.envs import ContinualBenchEnv
 from shimmy.openai_gym_compatibility import GymV21CompatibilityV0
-import loggers as l
-
-
-timesteps = 500  # by default
-episodes = 1000  # by default
-
 
 class ContinualBenchVecEnv:
     def __init__(self, num_envs, seed=0, vec_env_cls=SubprocVecEnv, task="sequential"):
@@ -51,43 +45,33 @@ class ContinualBenchVecEnv:
 
         return vec_envs
 
-    def train(self, episodes=1000, timesteps=500):
+    def train(self, episodes=1):
         vec_envs = self.make_envs()
-        success_buffer = []
-        all_task_performance = []
 
         if self.task in self.task_sequence:
             vec_env = vec_envs[self.task]
             print(f"Training on task: {self.task}")
             for ep in range(episodes):
                 obs = vec_env.reset()
-                for step in range(timesteps):
+                for step in range(1):
                     actions = np.array([vec_env.action_space.sample() for _ in range(self.num_envs)])
                     obs, rewards, dones, infos = vec_env.step(actions)
-                    successes = np.array([info[self.task]['success'] for info in infos])
-                    success_buffer.append(l.step_success(successes))
-                task_performance = l.task_performance(success_buffer)
-                success_buffer.clear()
-                print(f"ep={ep} | Task {self.task} performance: {task_performance}")
-            vec_env.close()
+                    # print(f"rewards: {rewards}")
+                vec_env.close()
 
         elif self.task in ["sequential", "random"]:
             for task_name, vec_env in vec_envs.items():
                 print(f"Training on task: {task_name}")
                 for ep in range(episodes):
                     obs = vec_env.reset()
-                    for step in range(timesteps):
+                    for step in range(1):
                         actions = np.array([vec_env.action_space.sample() for _ in range(self.num_envs)])
                         obs, rewards, dones, infos = vec_env.step(actions)
                         successes = np.array([info[task_name]['success'] for info in infos])
-                        success_buffer.append(l.step_success(successes))
-                    task_performance = l.task_performance(success_buffer)
-                    success_buffer.clear()
-                    print(f"ep={ep} | Task {task_name} performance: {task_performance}")
-                all_task_performance.append(task_performance)
-                vec_env.close()
-
-
+                        print(f"obs: {obs}, rewards: {rewards}, dones: {dones}, success: {successes}")
+                        
+                        # print(f"infos: {infos}")
+                vec_env.close()                
 if __name__ == "__main__":
-    vec_env = ContinualBenchVecEnv(num_envs=1, task="door")
-    vec_env.train(episodes=1000, timesteps=100)
+    vec_env = ContinualBenchVecEnv(num_envs=10, task="sequential")
+    vec_env.train()

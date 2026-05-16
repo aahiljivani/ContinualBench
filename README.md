@@ -58,6 +58,14 @@ pip install stable-baselines3 shimmy
 
 ## Quick Start
 
+The recommended way to run the full benchmark suite with environment vectorization, config parsing, and wandb logging is via the provided training script:
+
+```bash
+# Run the continual learning benchmark using the default configuration
+python -m src.train
+```
+
+For manual, lower-level control over the environment:
 ```python
 from continual_bench.envs import ContinualBenchEnv
 
@@ -256,43 +264,42 @@ for step in range(10000):
 
 ---
 
-## Vectorized Environments
+## Vectorized Environments & Benchmarking
 
-### Using ContinualBenchVecEnv (Recommended)
+### Using the ContinualBenchRunner (Recommended)
 
-The `ContinualBenchVecEnv` wrapper provides a convenient interface for parallel environment execution with Stable Baselines 3 compatibility:
+The `ContinualBenchRunner` (invoked via `src/train.py`) is the main entry point for running parallel vectorized environments and evaluating continual learning agents. It leverages an `OmegaConf`-based configuration system.
 
-```python
-from vectorize import ContinualBenchVecEnv
-import numpy as np
+The default settings are located in `cfgs/default.yaml`:
 
-# Create 4 parallel environments running the "button" task
-vec_env = ContinualBenchVecEnv(
-    num_envs=4,        # Number of parallel environments
-    seed=0,            # Base seed (each env gets seed + env_id)
-    parallel=True,     # True=SubprocVecEnv (multiprocess), False=DummyVecEnv (single-process)
-    task="button",     # Task for all environments
-)
+```yaml
+benchmark_mode: continual      # Modes: "continual" (sequential), "random" (shuffled), or "task" (single task)
+task_list: ["door", "window", "button", "faucet", "peg", "block"]
+seed: 0
+num_envs: 10
+vec_env_cls: SubprocVecEnv     # Use DummyVecEnv for single-process debugging
+policy: RandomPolicy
 
-obs = vec_env.reset()
+logging:
+  project: continual-bench
+  enable_wandb: true           # Set to true to automatically sync metrics
+  wandb_entity: jivani-aahil-university-of-ottawa
 
-for step in range(2000):
-    actions = np.array([vec_env.env.action_space.sample() for _ in range(4)])
-    obs, rewards, dones, infos = vec_env.step(actions)
+train:
+  episodes_per_task: 100
+  timesteps_per_episode: 500
 
-vec_env.close()
+eval:
+  eval_every_steps: 1000
+  num_eval_episodes: 10
 ```
 
-**Parameters:**
+You can launch a fully vectorized training session by running:
+```bash
+python -m src.train
+```
 
-| Parameter | Type | Default | Description |
-|:---------:|:----:|:-------:|:------------|
-| `num_envs` | `int` | — | Number of parallel environment instances |
-| `seed` | `int` | `0` | Base random seed (env `i` gets `seed + i`) |
-| `parallel` | `bool` | `True` | `True` for `SubprocVecEnv` (separate processes), `False` for `DummyVecEnv` (same process) |
-| `task` | `str` | `"Button"` | Initial task for all environments |
-
-> **Note:** The vectorized environments are wrapped with `shimmy.GymV21CompatibilityV0` to bridge the legacy OpenAI Gym API to the Gymnasium API expected by Stable Baselines 3.
+The runner automatically configures the `SubprocVecEnv` workers, applies the correct base `seed`, bridges the OpenAI Gym API to Gymnasium via `shimmy`, and logs step successes, regret, and evaluation metrics directly to Weights & Biases (`wandb`).
 
 ### Manual SubprocVecEnv Setup
 

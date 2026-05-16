@@ -32,6 +32,10 @@ class ContinualBenchVecEnv:
         raise ValueError("vec_env_cls must be one of {'SubprocVecEnv', 'DummyVecEnv'}")
 
     def _make_single_env(self, rank: int, task_name: str):
+        ''' 
+        creates a single environment for task_name with unique
+        seed and gymnasium compatibility wrapper
+        '''
         def _init():
             env = ContinualBenchEnv(render_mode=None, seed=self.seed + rank)
             env.set_task(task_name)
@@ -39,6 +43,9 @@ class ContinualBenchVecEnv:
         return _init
 
     def _build_training_order(self) -> List[str]:
+        '''
+        error handling  and shuffling for random task order
+        '''
         if self.benchmark_mode == "continual":
             return list(self.task_list)
 
@@ -46,7 +53,7 @@ class ContinualBenchVecEnv:
             tasks = list(self.task_list)
             rng = random.Random(self.seed)
             rng.shuffle(tasks)
-            return tasks
+            return tasks # TODO we need to shuffle 720 times to get all permutations. Future work.
 
         if self.benchmark_mode == "task":
             if self.single_task_name not in self.task_list:
@@ -60,14 +67,18 @@ class ContinualBenchVecEnv:
             "Expected one of {'continual', 'random', 'task'}"
         )
 
-    def make_envs(self) -> Dict[str, DummyVecEnv]:
+    def make_envs(self) -> Dict[str, SubprocVecEnv]: 
+        ''' 
+        creates vectorized environment for parallel envs training across single task.
+        returns a dict mapping task_name to corresponding vectorized env.
+         '''
         vec_envs = {}
         for task_name in self._build_training_order():
             env_fns = [self._make_single_env(i, task_name) for i in range(self.num_envs)]
             vec_envs[task_name] = self.vec_env_cls(env_fns, start_method="spawn")
         return vec_envs
 
-    def _build_policy(self, action_space, num_envs: int):
+    def _build_policy(self, action_space, num_envs: int): # building SAC and PPO policies soon.
         if self.cfg.policy == "RandomPolicy":
             return RandomPolicy(action_space, num_envs)
         raise ValueError(f"Unsupported policy={self.cfg.policy}")

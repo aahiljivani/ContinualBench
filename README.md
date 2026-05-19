@@ -1,6 +1,12 @@
 <div align="center">
 
-# Continual Bench
+# Continual RL Evaluation of Model Based and Model Free Algorithms (CREMMA)
+
+**This repository extends the public ContinualBench benchmark from sail-sg for additional sequential, and task benchmarking with parallel and vectorized environment training infrastructure, training workflows, and comparative evaluation of continual RL algorithms.**
+
+**Original benchmark:**
+- Paper: Continual Reinforcement Learning by Planning with Online World Models
+- Repo: https://github.com/sail-sg/ContinualBench
 
 **A Unified Benchmark for Continual Reinforcement Learning with Shared World Dynamics**
 
@@ -42,7 +48,7 @@ Continual Bench provides a single MuJoCo environment containing six distinct man
 ## Installation
 
 ```bash
-git clone git@github.com:sail-sg/ContinualBench.git && cd ContinualBench
+git clone https://github.com/aahiljivani/CREMMA.git && cd CREMMA
 pip install -e .
 ```
 
